@@ -1,0 +1,102 @@
+---
+title: "Homework 3"
+author: "Niva Shirsekar"
+date: "2024-10-02"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+Series = read_csv("~/Downloads/R Stuff/Homework3_tvSeries.csv")
+Principals = read_csv("~/Downloads/R Stuff/Homework3_principals.csv")
+Ratings = read_csv("~/Downloads/R Stuff/Homework3_ratings.csv")
+```
+
+# **Question 1**
+
+```{r}
+#tibble with the TV Series that are no longer running
+newtib = filter(Series, Series$EndYear >1)
+newtib$YearsRun <- newtib$EndYear-newtib$StartYear
+
+#variable with how many years each series ran 
+tib_ggplot <- ggplot(newtib)
+
+#Distribution of years run
+tib_ggplot + geom_histogram(aes(x=YearsRun), binwidth=1, fill="pink") + labs(title="Freqency of How Many Years a Series Ran for",x='Years a Series Ran',y='Frequency')
+
+#number of tv series that ended the same year as they started
+sumtib = filter(newtib, newtib$YearsRun < 1)
+nrow(sumtib)
+```
+
+A total of 17919 shows ended and started the same year.  
+
+# **Question 2**
+
+```{r}
+
+#Proportion of the TV series that do not have rating information
+merged_tv_ratings <- left_join(Series, Ratings, by = "tconst")
+
+#add a new column to indicate if rating information is missing
+merged_tv_ratings <- mutate(merged_tv_ratings, RatingMissing = is.na(avgRating))
+
+#calculate the proportion of TV series without rating information
+total_series <- nrow(merged_tv_ratings)
+no_rating_count <- sum(merged_tv_ratings$RatingMissing)
+proportion_no_rating <- no_rating_count / total_series
+
+print(proportion_no_rating)
+
+#print the series with a rating of 9 or higher and at least 20000 votes
+high_rated_series <- filter(merged_tv_ratings, avgRating >= 9 & numvotes >= 20000)
+
+#select the series names from the filtered data
+series_names <- select(high_rated_series, Title)
+
+#sort the series names alphabetically
+sorted_series_names <- arrange(series_names, Title)
+
+print(sorted_series_names)
+
+```
+
+The proportion of TV Series not having rating information is 0.6442. 
+
+# **Question 3**
+
+```{r, warning=FALSE, message=FALSE}
+#ages of the principal cast and crew when each TV series started
+merged_data <- merge(Series, Principals, by = "tconst")
+
+#calculate ages of principal cast and crew at the start of each series
+merged_data$AgeAtStart <- merged_data$StartYear - merged_data$BirthYear
+
+#filter out any rows with NA values
+valid_data <- merged_data[!is.na(merged_data$AgeAtStart), ]
+
+#calculate the average age
+average_ages_by_category <- aggregate(AgeAtStart ~ Category, data = valid_data, mean)
+round(average_ages_by_category[,2], 2)
+average_ages_by_category[,2] = round(average_ages_by_category[,2], 2)
+print(average_ages_by_category)
+```
+
+As seen by this table, we can see that the average age is around 43 years for an actor. Actresses seem to have the youngest mean age at 37.90, while writers have the oldest mean age around 47. 
+
+# **Question 4**
+
+I chose the Rolling Stone's Top 500 Albums dataset because music and pop culture are topics that genuinely interest me. I appreciate how the dataset includes relevant and current data, which allows me to see real-world implications and trends in the music industry. This connection to pop culture made the analysis more engaging and meaningful for me. In terms of predictors, I selected the ones I did because I thought they would not only compare well with each other but also provide insights into potential relationships between different aspects of an album's success. For instance, I anticipated that an album's time spent on the Billboard Top 100 would influence its Spotify popularity, as sustained chart success might indicate broader public appeal. However, I was surprised to find that there wasn’t a strong correlation between those variables, which challenged my initial assumptions and gave me deeper insights into the complexities of measuring musical success.
+
+# **Question 5**  
+
+One of the main challenges I faced while completing this assignment was formatting the data properly and setting up the x and y axes in a way that made the data clearer and easier to interpret. I had to experiment with different approaches to ensure the graphs communicated the insights I was looking for. Next time, I plan to compare a wider range of variables and explore different types of graphs or plots that might better fit the data. Expanding beyond the familiar visualizations will help me find more efficient and impactful ways to present the information. I also learned something important about myself as a data science student: while I tend to rely on the graphs and plots we've covered in class, I realized that stepping outside of my comfort zone and exploring new visualization techniques is essential for growth. In future projects, I plan to search for and experiment with alternative ways of displaying data to improve both clarity and insight.
+
+# **Question 6**  
+
+As someone who takes pride in their music taste and is constantly on the lookout for the next great song, music albums hold significant personal importance to me. This connection influenced my analysis because it motivated me to dive deeper into the history behind the Rolling Stone's list, allowing me to better understand the context and significance of the data I was presenting. Having that background knowledge helped me analyze the data with more insight and appreciation for its nuances. If someone without this understanding of the list's history and the cultural weight of these album ratings were to analyze the same dataset, they might not be able to grasp the full significance of their findings. Their analysis could miss out on important contextual details that provide depth to the results.

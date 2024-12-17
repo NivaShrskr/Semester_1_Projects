@@ -1,0 +1,98 @@
+---
+title: "Homework 5"
+author: "Niva Shirsekar"
+date: "2024-10-22"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(sas7bdat)
+library(rvest)
+```
+
+# **Question 1**
+
+```{r}
+#Downloading and reading astronauts dataset
+astronauts <- read.csv("~/Downloads/R Stuff/astronauts.csv")
+ast_ggplot <- ggplot(astronauts)
+
+#Making a boxplot of the mission year variable
+ast_ggplot + geom_boxplot(aes(x=Mission.Year), fill="darkgreen", ) + labs(title="Boxplot of Mission Years", x= "Years")
+```
+
+EVA stands for extravehicular activity. The two variable names in which this occurs is Mission.Durations.EVA, and Profile.Lifetime Statistics.EVA. These variables describe the extravehicular activity during the duration of the missions and astornaut goes on and the EVA during their entire lifetime. 
+
+# **Question 2**
+
+```{r warning = FALSE}
+#downloading and reading scraped olympics dataset (scraped from the Wikipedia website and formatted in Google sheets)
+olympics <- read.csv("~/Downloads/R Stuff/Olympics.csv")
+
+#Filling in the missing US total summer gold values
+olympics$Summer.Gold[150] =1105
+
+#converting character variables to numeric variables
+olympics$Summer.Gold <- as.numeric(as.character(olympics$Summer.Gold))
+
+# Sort the dataset by Summer Gold Medals in descending order
+sorted_gold <- olympics[order(-olympics$Summer.Gold), ]
+tibble(head(sorted_gold, 10))
+
+
+#converting character variables to numeric variables
+olympics$Summer.Total <- as.numeric(as.character(olympics$Summer.Total))
+
+#Scatterplot comparing total summer medals and total winter meadals 
+olymp_ggplot <- ggplot(olympics)
+olymp_ggplot + geom_point(aes(x=Summer.Total, y=Winter.Total), color = "coral") + labs(title="Summer vs Winter Total Medals", x = "Summer Total Medals", y = "Winter Total Medals") + 
+  theme(axis.text.x = element_text(angle = 50, hjust = 1, size = 12)) +theme(aspect.ratio = 1/2) 
+
+```
+
+# **Question 3**
+
+```{r}
+#Scraping the data from the SDS course inventory page 
+stats_link <- "https://stat.utexas.edu/academics/undergraduate-course-inventory"
+stats_page <- read_html(stats_link)
+
+#scraping course number and title
+course_names <- html_text(html_elements(stats_page, ".column-count-2 a"))
+
+#scraping course descriptions
+course_descriptions <- html_text(html_elements(stats_page, "h4+ p"))
+
+#creating and printing a tibble
+SDS_course_tib = tibble("Course Number/Title" = course_names, "Description" = course_descriptions)
+print(SDS_course_tib, n = Inf)
+```
+
+# **Question 4**
+
+```{r}
+#scraping data from the Harvard Biostatistics PhD student directory
+harvard_link <- "https://www.hsph.harvard.edu/biostatistics/phdstudents/"
+harvard_page <- read_html(harvard_link)
+
+#scraping student names 
+student_name <- html_text(html_elements(harvard_page, "h4"), trim = TRUE)
+
+#scraping student emails
+student_email <- html_text(html_elements(harvard_page, "p:nth-child(1) , h5+ p"), trim = TRUE)
+
+#creating and printing the tibble
+harvtib = tibble("Student Names" = student_name, "Student Emails" = student_email)
+print(harvtib, n = Inf)
+```
+
+Gopal Kotecha was missing an email in the directory, so his email is just shown as some of his profile information. Rebecca Danning and Jane Liang also had some of their personal profile information get caught in the webscrape. 
+
+

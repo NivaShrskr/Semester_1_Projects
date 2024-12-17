@@ -1,0 +1,158 @@
+---
+title: "Homework 4"
+author: "Niva Shirsekar"
+date: "2024-10-08"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r echo=FALSE, warning = FALSE, message=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(kableExtra)
+```
+
+# **Question 1**
+
+```{r message = FALSE}
+#reading dataset in
+Kaylor = read_csv("~/Downloads/R Stuff/taylor_kelce.csv")
+```
+
+```{r}
+#Parse game date variable
+Kaylor$Date <- as.Date(Kaylor$Date, format = "%m/%d/%Y")
+
+#Dates that don't make sense 
+Kaylor$Date[8] <- as.Date("2023-10-29") #date 1
+Kaylor$Date[12] <- as.Date("2023-12-3") #date 2
+Kaylor$Date[17] <- as.Date("2024-01-07") #date 3
+Kaylor$Date[18] <- as.Date("2024-01-13") #date 4
+
+#Parsing game date again, with fixed dates
+Kaylor$Date <- as.Date(Kaylor$Date, format = "%m/%d/%Y")
+```
+
+# **Question 2**
+
+```{r}
+Kaylor$DayOfWeek <- weekdays(Kaylor$Date) #adding what day the game was played at
+days_of_interest <- c("Sunday", "Monday", "Thursday", "Saturday")
+
+#formatting columns 
+results <- data.frame(
+  DayOfWeek = days_of_interest,
+  Games = integer(length(days_of_interest)),
+  ProportionAttended = integer(length(days_of_interest))
+)
+
+#for each day, add the totals
+for (day in days_of_interest) {
+  results$Games[results$DayOfWeek == day] <- sum(Kaylor$DayOfWeek == day)
+  results$TaylorAttended[results$DayOfWeek == day] <- sum(Kaylor$DayOfWeek == day & Kaylor$WasTaylorSwiftatthegame == "Yes")
+}
+
+#proportion
+results$ProportionAttended <- with(results, TaylorAttended / Games)
+results$ProportionAttended <- round(results$ProportionAttended, 2)
+results[,-4]
+
+
+```
+
+# **Question 3**
+
+```{r message = FALSE}
+#reading in the dataset
+Injury = read_csv("~/Downloads/R Stuff/concussions_nfl.csv")
+```
+
+```{r}
+#parsing the date variable
+Injury$Date <- dmy(Injury$Date)
+
+#confirming that all the injuries are in the correct years
+table(year(Injury$Date))
+
+```
+
+```{r}
+#Reshaping dataset
+widerdata <- pivot_wider(Injury, id_cols = c('Player', 'Team', 'Game', 'Date'), names_from = Information, values_from = Value)
+widerdata[1:10,]
+
+```
+
+# **Question 4**
+
+```{r}
+#filtering for concussions
+widerdatafiltered <- widerdata[widerdata$'Reported Injury Type' == 'Concussion',]
+
+#changing the labels to words
+widerdatafiltered$Month = month(widerdatafiltered$Date, label = T, abbr = F)
+
+#Figure of concussions in each month
+ggplot(widerdatafiltered, aes(x = Month), ylim=120) +
+  geom_bar(fill = "blue") +
+  labs(title = "Number of Concussions by Month", x = "Month", y = "Count of Concussions")
+
+#Figure of concussions per position
+ggplot(widerdatafiltered, aes(x = Position), ylim=120) +
+  geom_bar(fill = "pink") +
+  labs(title = "Number of Concussions by Position", x = "Position", y = "Count of Concussions") + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12))
+```
+
+# **Question 5**
+
+```{r}
+#reading dataset in 
+food = read_csv("~/Downloads/R Stuff/Homework4_food.csv")
+
+#subset of the first 3 variables and the 4 columns 
+food_children <- food[, c("County", "Population", "State",
+                         "LowAccessNumbers_Children_1Mile",
+                        "LowAccessNumbers_Children_0.5Mile",
+                        "LowAccessNumbers_Children_10Miles",
+                        "LowAccessNumbers_Children_20Miles")]
+
+#reshaping the data
+long_data <- pivot_longer(food_children,
+                          cols = starts_with("LowAccessNumbers_Children"),
+                          names_to = "distance",
+                          values_to = "pop_count",
+                          names_prefix = "LowAccessNumbers_Children_")
+
+#Converting to numeric values
+long_data$distance[long_data$distance == "1Mile"] <- 1
+long_data$distance[long_data$distance == "0.5Mile"] <- 0.5
+long_data$distance[long_data$distance == "10Miles"] <- 10
+long_data$distance[long_data$distance == "20Miles"] <- 20
+
+#Sorting and outputting data
+sorted_data <- arrange(long_data, County)
+head(sorted_data, 10)
+```
+
+# **Question 6**
+
+```{r}
+
+#finding the mean populations for each distance 
+mean_pop_0_5 <- mean(long_data$pop_count[long_data$distance == 0.5], na.rm = TRUE)
+mean_pop_1 <- mean(long_data$pop_count[long_data$distance == 1], na.rm = TRUE)
+mean_pop_10 <- mean(long_data$pop_count[long_data$distance == 10], na.rm = TRUE)
+mean_pop_20 <- mean(long_data$pop_count[long_data$distance == 20], na.rm = TRUE)
+
+#making a table
+mean_pop_counts <- data.frame(
+  Distance = c(0.5, 1, 10, 20),
+  Mean_Pop_Count = c(mean_pop_0_5, mean_pop_1, mean_pop_10, mean_pop_20)
+)
+round(mean_pop_counts, 2)
+```
+
+Accessibility is harder in more remote areas, shown by the decrease in population the further away from a supermarket you get.

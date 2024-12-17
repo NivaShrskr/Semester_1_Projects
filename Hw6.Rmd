@@ -1,0 +1,192 @@
+---
+title: "Homework 6"
+author: "Niva Shirsekar"
+date: "2024-10-30"
+output: 
+   html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy = TRUE, tidy.opts=list(width.cutoff=60))
+
+```
+
+
+```{r}
+#loading in necessary libraries 
+library(tidyverse)
+library(dplyr)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(stringr)
+library(readr)
+library(tibble)
+library(tidyr)
+library(kableExtra)
+
+#created function to make pretty tables
+my_nice_table = function(your_table, vector_nice_names, nice_title){
+  nice = kable(your_table, col.names = vector_nice_names, caption = nice_title)
+  nice_format = kable_classic(nice, full_width = T, lightable_options = "striped", html_font = "sans-serif")
+  return(nice_format)
+}
+
+
+```
+
+# **Question 1**
+
+```{r warning = FALSE, message = FALSE}
+#setting up for loop
+w = 10
+new_data <- data.frame()
+
+#for loop to read in the 10 drake lyrics files 
+for(i in 1:w){
+  file_name = paste0("drake_data_",i,".csv")
+  read_data <- read.csv(file_name)
+  
+  new_data <- rbind(new_data, read_data)
+}
+
+#row and column count
+number_of_rows <- nrow(new_data)
+number_of_columns <- ncol(new_data)
+```
+
+There are 287 rows and 4 columns in this dataset. 
+
+# **Question 2**
+
+```{r warning = FALSE, message = FALSE}
+#making all text lowercase
+new_data$lyrics = str_to_lower(new_data$lyrics) 
+
+#remove commas
+new_data$lyrics = str_replace_all(new_data$lyrics, ",", "") 
+
+#remove periods
+new_data$lyrics = str_replace_all(new_data$lyrics, "\\.", "") 
+
+#remove question marks
+new_data$lyrics = str_replace_all(new_data$lyrics, "\\?", "")
+
+#remove exclamation points
+new_data$lyrics = str_replace_all(new_data$lyrics, "\\!", "") 
+
+#remove numbers
+new_data$lyrics = str_replace_all(new_data$lyrics, "[0-9]", "")
+
+#remove new line
+new_data$lyrics = str_replace_all(new_data$lyrics, "\\n", "") 
+```
+
+
+# **Question 3**
+
+```{r warning = FALSE, message = FALSE}
+#splits into words
+split_lyrics = str_split(new_data$lyrics, " ", simplify=TRUE)
+
+#make one long vector
+split_lyrics_vec = as.vector(split_lyrics)
+
+#remove empty elements
+split_lyrics_vec = split_lyrics_vec[split_lyrics_vec != ""]
+
+#splitting lyrics into a table with the top 20 most frequently used words 
+my.table = as.data.frame(table(split_lyrics_vec))
+fixed_table = arrange(my.table, desc(Freq)) [1:20,]
+
+#making pretty table 
+my_nice_table(your_table = fixed_table, vector_nice_names = c("Word", "Frequency"), nice_title = "Table of Word Frequency")
+```
+
+# **Question 4**
+
+```{r warning = FALSE, message = FALSE}
+#vector containing 8 words 
+my.words = c("know", "love", "need", "think", "she", "back", "want", "time")
+word_count <- data.frame()
+
+#for loop that. counts the number of times each word appears in the lyrics
+for(i in my.words){
+  count = sum(str_count(new_data$lyrics, i))
+  word_count = rbind(word_count, data.frame(Word = i, Count= count))
+} 
+
+#displaying the lyrics in a nice table 
+my_nice_table(your_table = word_count, vector_nice_names = c("Word", "Frequency"), nice_title = "Table of Word Frequency")
+
+
+#Barplot of the counts of each word
+words_ggplot <- ggplot(word_count)
+words_ggplot +
+  geom_bar(aes(x=Word, y=Count, fill = Word), stat = "identity") + theme_minimal() +  theme(legend.position = "none") + labs(title = "Word Frequency in Lyrics", x = "Words", y = "Frequency")
+
+```
+
+In this instance we are shown how many times we see the word know, even if it is part of a different word like "knowing" or "knows", which is omitted in the previous question where we searched for the word "know" as a standalone and not as part of a compound word.  
+
+# **Question 5**
+
+```{r warning = FALSE, message = FALSE}
+#restating the vector and identifying into unique albums
+my.words = c("know", "love", "need", "think", "she", "back", "want", "time")
+albums = unique(new_data$album)
+
+words <- data.frame(Album = character(), word= character(), count = character())
+
+#for loop to show how many times each word appears in each album 
+for (album in albums) {
+  album_data = new_data[new_data$album == album, ]
+  for(i in my.words) {
+    count = sum(str_count(album_data$lyrics, i))
+    words = rbind(words, data.frame(Album = album, Word = i, Count= count))
+  }
+}
+
+#nicely formatted table 
+my_nice_table(your_table = words, vector_nice_names = c("Album","Word", "Frequency"), nice_title = "Table of Word Frequency by Album")
+
+```
+
+
+# **Question 6**
+
+```{r warning = FALSE, message = FALSE}
+#creating a for loop that shows the word counts for each album in individual plots 
+for(i in my.words) {
+  subset = words[words$Word == i, ]
+  plot = ggplot(subset, aes(x= Album, y = Count, fill = Album)) + geom_bar(stat ="identity") + theme_minimal() +  theme(axis.text.x = element_text(angle=45, hjust =1), legend.position ="none") + labs(title = paste("Frequency of the Word:", i), x = "Album", y= "Frequency")
+  print(plot)
+  }
+
+```
+
+
+# **Question 7**
+
+```{r warning = FALSE, message = FALSE}
+#replace "K" and "M" with appropriate multipliers using ifelse
+new_data$track_views <- ifelse(str_detect(new_data$track_views, "K"),
+                                 as.numeric(str_replace(new_data$track_views, "K", "")) * 1000,
+                                 as.numeric(str_replace(new_data$track_views, "M", "")) * 1000000)
+
+#storing cleaned data in new variable 
+new_data$know_count <- str_count(new_data$lyrics, "know")
+
+#scatterplot of the count of "know" vs track views for each song
+ggplot(new_data, aes(x = know_count, y = track_views, color = album)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Frequency of the Word 'Know' vs. Track Views",
+       x = "Track Views",
+       y = "Frequency of the Word 'Know'") 
+```
+
+There seems to be a slight negative correlation between the use of the word know and the track views; the less the word "know" is used, the more track views the track generally has.
+

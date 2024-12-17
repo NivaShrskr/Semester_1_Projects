@@ -1,0 +1,196 @@
+---
+title: "Homework 7"
+author: "Niva Shirsekar"
+date: "2024-11-06"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+#loading necessary libraries 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, tidy = TRUE, tidy.opts=list(width.cutoff=60))
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(lubridate)
+```
+
+# **Question 1**
+
+```{r}
+#reading in dataset
+monkey = read.csv("monkeypox.csv")
+
+#getting rid of "world" value
+monkey = monkey[monkey$Country!= "World",]
+
+
+# Defining the function to fix dates
+fix.date <- function(text) {
+  # Split the text by "/"
+  text.pieces <- str_split(text, "/", simplify = TRUE)
+  
+  # Convert the pieces to numeric for proper comparison
+  day_part <- as.numeric(text.pieces[1])
+  month_part <- as.numeric(text.pieces[2])
+  
+  # Check if the first part (day) is greater than 12 and swap if needed
+  if (day_part > 12) {
+    text.fixed <- paste(text.pieces[2], text.pieces[1], text.pieces[3], sep = "/")
+    print(paste("I fixed the incorrect date:", text))
+  } else { 
+    text.fixed <- text
+  }
+  
+  return(text.fixed)
+}
+
+# Test the function on single dates
+fix.date("29/06/22")
+fix.date("06/23/22")
+
+# Apply fix.date to all entries in monkey$Date.Full
+new.date <- sapply(monkey$Date.Full, fix.date)
+
+# Convert the fixed dates to Date format
+new.date <- mdy(new.date)
+monkey$new.date <- new.date
+
+```
+
+
+# **Question 2**
+
+```{r}
+#creating new fucntion that takes in 3 arguments
+new.func <- function(country1, country2 = "Argentina", colors = c("cornflowerblue", "darkorchid4")) {
+  #converting so only the first letter is always uppercase
+  country1 = str_to_title(country1)
+  country2 = str_to_title(country2)
+#subsetting data 
+ country1_data <- monkey[monkey$Country == country1,]
+  country2_data <- monkey[monkey$Country == country2,]
+  
+  #combining data into one dataset 
+  combined_country_data <- rbind(country1_data, country2_data)
+  
+  #plotting function
+  ggplot(combined_country_data, aes(x = new.date, y = Data.Cases.Cum, color = Country)) +
+    geom_line(linewidth = 1.2) +
+    scale_color_manual(values = colors) +
+    labs(
+      title = paste("Cumulative Monkeypox Cases Over Time for", country1, "and", country2),
+      x = "Date",
+      y = "Cumulative Cases"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+#testing function
+new.func("switzerland", "BELGIUM", colors = c("pink","purple"))
+
+```
+
+
+# **Question 3**
+
+```{r}
+#adding 4th argument to function for cululative cases for either raw or millions
+new.func <- function(country1, country2 = "Argentina", colors = c("cornflowerblue", "darkorchid4"), count = "normal") {
+ 
+  #converting so only the first letter is always uppercase
+  country1 = str_to_title(country1)
+  country2 = str_to_title(country2)
+  
+  #subsetting data 
+  country1_data <- monkey[monkey$Country == country1,]
+  country2_data <- monkey[monkey$Country == country2,]
+    
+  #combining data into one dataset 
+  combined_country_data <- rbind(country1_data, country2_data)
+  
+  #Determining whether to use millions or use raw data 
+  if(count =="million") {
+    y1= "Data.Cases.Cum.per.million"
+    y1_label = "Cumulative Cases per Million People"
+    title = paste("Cumulative Monkeypox Cases per Million in",  country1, "and", country2)
+  }
+  else{
+    y1= "Data.Cases.Cum"
+    y1_label = "Cumulative Cases"
+    title = paste("Cumulative Monkeypox Cases in",  country1, "and", country2)
+  }
+  
+  #plotting function
+  ggplot(combined_country_data, aes(x = new.date, y = .data[[y1]], color = Country)) +
+    geom_line(linewidth = 1.2) +
+    scale_color_manual(values = colors) +
+    labs(
+      title = title,
+      x = "Date",
+      y = y1_label
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+#calling function with test values (in millions)
+new.func("switzerland", "belgium", colors = c("pink","purple"), "million")
+
+#calling function with test values (raw)
+new.func("switzerland", "belgium", colors = c("pink","purple"))
+
+```
+
+# **Question 4**
+
+```{r}
+
+#creating function that takes two arguments 
+sort_date <- function(date, want.plot = FALSE) {
+  
+  #fixing date format
+  date <- as.Date(date, format = "%m/%d/%y")
+  
+  #filter
+  date_data <- monkey[monkey$new.date == date, ]
+  
+  #Creating error message and stopping function from running 
+  if (nrow(date_data) < 2) {
+    stop("Task cannot be done because there are not enough countries with case counts on that date.")
+  }
+  
+  #finding country with highest number of cumulative cases
+  highest_cases <- date_data[which.max(date_data$Data.Cases.Cum),]
+  
+  #creating message which tells the the user which country had the highest number of cumulative cases on that date 
+  result <- paste("On", format(as.Date(date), "%B %d, %Y"), 
+                  "the country with the highest number of cumulative cases was",
+                  highest_cases$Country, "with", highest_cases$Data.Cases.Cum, "cases.")
+  
+  #creating plot if user calls for it
+  if (want.plot == TRUE) {
+    p <- ggplot(date_data, aes(x = Data.Cases.Cum)) +
+      geom_histogram(binwidth = 250, color = "chartreuse") +
+      labs(title = paste("Histogram of Cumulative Cases on", format(as.Date(date), "%B %d, %Y")),
+           x = "Cumulative cases", 
+           y = "Count") +
+      theme_minimal()
+    
+      print(p)
+  }
+   return(result)
+}
+
+
+
+sort_date("8/8/22", FALSE)
+sort_date("07/15/22",TRUE)
+
+#sort_date("11/1/24", FALSE)
+#gives error message: Error in sort_date("11/1/24", FALSE):  Task cannot be done because there are not enough countries with case counts on that date.
+
+```
