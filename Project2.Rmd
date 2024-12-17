@@ -1,0 +1,263 @@
+---
+title: "Project 2"
+author: "Niva Shirsekar"
+date: "2024-11-03"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r global_options, echo=FALSE}
+#global options
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, tidy = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#loading in necessary libraries 
+library(tidyverse)
+library(dplyr)
+library(forcats)
+library(lubridate)
+library(purrr)
+library(stringr)
+library(readr)
+library(tibble)
+library(tidyr)
+library(kableExtra)
+library(rvest)
+library(sas7bdat)
+
+#creating function to make tables easier
+my_nice_table = function(your_table, vector_nice_names, nice_title){
+  nice = kable(your_table, col.names = vector_nice_names, caption = nice_title)
+  nice_format = kable_classic(nice, full_width = T, lightable_options = "striped", html_font = "sans-serif")
+  return(nice_format)
+}
+```
+
+# **Question 1**
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#reading in dataset
+Tyler = read.csv("Tyler_Dataset.csv")
+```
+
+I chose to analyze a dataset on Tyler, The Creator. The dataset is originally from Kaggle, though the author pulled the streaming data directly from Spotify. It offers a thorough collection of insights into his discography, featuring song attributes like tempo, key, danceability, and energy levels, as well as metrics related to track popularity. I picked this dataset because Tyler, The Creator is one of my favorite musical artists, and my roommate and I just got tickets to see his show at the Moody Center in March! His music style blends hip-hop, jazz, and funk with hard-hitting lyrics. He brings an edgy energy to the pop and rap scene, usually amplified by his creative and unusual music videos. I’m excited to explore how his music has evolved over time and what elements contribute to his current popularity. In my analysis, I will be investigating trends in his musical style, the acoustic features that define his work, the emotional tone of his lyrics, and several other variables as well. By diving into this dataset, I aim to uncover patterns that highlight Tyler’s impact on the music industry and provide a deeper understanding of modern hip-hop. [Click here](https://www.kaggle.com/datasets/chik0di/tyler-the-creator-dataset?resource=download&SSORegistrationToken=CfDJ8CXYA35d3CRDujxBNSrCTMsUSFJWWTGp7QQq7hhiQDLgVguMhWP5gDg5wrvW9lVf_jd-O7HXSh18Qvl306at5LaoiXTWliKC-InzDw8IM7DeiwDgnhdo3H1skfu2IZl-AzYeSVo9kqjhpm61KMwsL9ERXDklyzKXeyVZAFRzGjnFf7AF9aDpCQ6ahYtcbrOmFbj582JqXco2QRNwVgPe51nv-fxGvYU9YblFluREpmupYakd5RrzPYjEs51yLFBizK3iZ12-97wxF16YgEdLaXu7abOg0bQuEAJo2iF8Ahv0oWIF8KP_VhtCpYJSdp2b8BhOYaCFMbQO42iMRJkKMaSPk-0&DisplayName=Niva%20Shirsekar) to access the full dataset from Kaggle. 
+
+![Tyler, The Creator (sourced from Pintrest)](https://i.pinimg.com/736x/1f/40/b1/1f40b1332ce12601d499bc467f4682e6.jpg)
+
+# **Question 2**
+I was able to download a .zip file from Kaggle, which contained a .csv file with all the information on Tyler, The Creators' songs. There are 270 observations of the 26 variables present in the original dataset. I uploaded and opened this dataset in R, which I then subsetted in the following question. I created two new variables. One that combined studio, deluxe, and instrumental albums into one variable called Is_Album, and another that combined singles, EPs, and features called Is_Single_EP. It was difficult for me to work with the "year" values at first, as they were originally stored as numeric values, but once I changed them to categorical values, they became much easier to work with and were able to be plotted more easily. There were initially some NA values in the original dataset under the "Featured_artists" column, but I did not use that variable in my subsetted data. 
+
+# **Question 3**
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#creating subset
+Tyler_Sub = Tyler[, c("track_name", "album_name", "popularity", "danceability", "energy", "loudness", "speechiness", "tempo", "type", "year", "month")]
+
+#converting years from numeric to categorical 
+Tyler_Sub$year <- as.character(Tyler_Sub$year)
+
+#adding a new variable for combined albums
+for(i in 1:nrow(Tyler_Sub)){
+  if(Tyler_Sub$type[i] == 'Studio Album' | Tyler_Sub$type[i] == 'Album Deluxe' | Tyler_Sub$type[i] == 'Instrumental Album'){
+    Tyler_Sub$Is_Album[i] <- TRUE
+  }
+  else{
+    Tyler_Sub$Is_Album[i] <- FALSE
+  }
+}
+
+#adding a secondary new variable for the 
+for(i in 1:nrow(Tyler_Sub)){
+  if(Tyler_Sub$type[i] == 'Single' | Tyler_Sub$type[i] == 'Feature' | Tyler_Sub$type[i] == 'EP'){
+    Tyler_Sub$Is_Single_EP[i] = TRUE
+  }
+  else{
+    Tyler_Sub$Is_Single_EP[i] = FALSE
+  }
+}
+
+#creating a table that includes the name of each variable, its type, and a brief description of each variable 
+Subset_table = data.frame(
+  Var_name = c("track_name", "album_name", "popularity", "danceability", "energy", "loudness", "speechiness", "tempo", "type", "year", "month", "Is_Album", "Is_Single_EP"), 
+  Type = c("Character", "Character", "Integer", "Numeric","Numeric","Numeric", "Numeric", "Numeric", "Character", "Character", "Character", "Logical", "Logical"),
+  Description = c("name of track",
+                  "name of album",
+                  "popularity of album on Spotify",
+                  "danceability of track",
+                  "energy of track",
+                  "loudness of track",
+                  "speechiness of track",
+                  "tempo of track", 
+                  "type of track", 
+                  "year track was released",
+                  "month track was released", 
+                  "All Album Types", 
+                  "Singles and EPs combined"),
+  stringsAsFactors = FALSE
+)
+
+#using pre-made function to create pretty table 
+my_nice_table(your_table = Subset_table, vector_nice_names = c("Variable name", "Type", "Description"), nice_title = "Subsetted Variable Descriptions")
+```
+
+
+# **Question 4**
+
+```{r}
+#creating a function to distinguish between categorical and numeric variables, then creating the appropriate plot for each one
+
+make_graph <- function(data, col_name, color="red") {
+  #checking if the specified column is numeric or categorical
+  if (is.numeric(data[[col_name]])) { 
+    #creating a histogram for numerical variables
+    print(
+      ggplot(data, aes_string(x = col_name)) +
+        geom_histogram(binwidth = 10, color = "black", fill = color) +
+        labs(title = paste("Histogram of", col_name), x = col_name, y = "Frequency") +
+        theme_minimal()
+    )
+  #creating a bar plot for the categorical variables
+  } else if (is.factor(data[[col_name]]) || is.character(data[[col_name]])) {
+    print(
+      ggplot(data, aes_string(x = col_name)) +
+        geom_bar(color = "black", fill = color) +
+        labs(title = paste("Bar Plot of", col_name), x = col_name, y = "Count") +
+        theme_minimal()
+    )
+  } 
+}
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#creating graph for popularity
+make_graph(data=Tyler_Sub, col_name="popularity", color="darkgreen")
+```
+
+The distribution of a track's popularity on the Spotify charts is evenly distributed, with a peak at around 55, and a mean of 49. The five-number summary of this data is `r fivenum(Tyler_Sub$popularity)`. 
+
+```{r}
+#creating graph for Years
+make_graph(data=Tyler_Sub, col_name="year", color="magenta")
+
+#creating a variable to hold proportions per year
+years.table = prop.table(table(Tyler_Sub$year))
+#putting proportions into nice looking table
+my_nice_table(your_table = years.table, vector_nice_names = c("Year", "Proportion"), nice_title = "Proportion of Total Tracks Released in Each Year")
+```
+
+The distribution of a track's release year has a peak at 2013, which has the highest proportion of tracks at 0.22.
+
+
+```{r}
+#creating graph for months
+make_graph(data=Tyler_Sub, col_name="month", color="chartreuse3")
+
+#finding proportions for descriptive statistics
+month.table = prop.table(table(Tyler_Sub$month))
+
+#making proportions into a table so it is easier to read
+my_nice_table(your_table = month.table, vector_nice_names = c("Month", "Proportion"), nice_title = "Proportion of Total Tracks Released in Each Month")
+```
+
+The distribution of a track's release month is bimodal, with one peak in April and the other in May. April has the highest proportion of tracks released at `r round(month.table["April"],2)`. 
+
+```{r}
+#creating graph for type of track 
+make_graph(data=Tyler_Sub, col_name="type", color="darkorchid4")
+
+#finding proportions for descriptive statistics
+albums.table = prop.table(table(Tyler_Sub$type))
+
+#making proportions into a table so it is easier to read
+my_nice_table(your_table = albums.table, vector_nice_names = c("Type", "Proportion"), nice_title = "Proportion of Different Types of Tracks")
+```
+
+The distribution of different types of tracks is skewed slightly to the left, with the peak at Studio Albums. Studio Albums has the highest proportion of tracks at `r round(albums.table["Studio Album"],2)`.
+
+# **Question 5**
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width = 8, fig.height = 10}
+tyler_ggplot <- ggplot(Tyler_Sub)
+
+#creating plot for popularity vs album name 
+tyler_ggplot + geom_col(aes(x=popularity, y=album_name), fill = "bisque4") + theme_minimal() +  theme(legend.position = "none") + labs(title = "Popularity of Track vs Album Name", x = "Popularity", y = "Album Name")
+
+#finding descriptive statistics
+stats.1 = Tyler_Sub %>%
+  group_by(album_name) %>%
+  summarize(
+    mean = mean(popularity, na.rm = TRUE))
+
+
+#putting summary statistics into an easier to see table
+my_nice_table(your_table = stats.1, vector_nice_names = c("Album Name", "Popularity"), nice_title = "Means of Popularity of Each Track in Different Albums")
+
+```
+
+While the album Goblin had the highest popularity overall, Chromakopia had the highest average popularity at `r round(stats.1 %>% filter(album_name == "CHROMAKOPIA") %>% pull(mean), 2)`. 
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width = 10}
+#creating plot for danceability vs type
+tyler_ggplot +
+  geom_col(aes(x = danceability, y = type), fill = "cornflowerblue") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Danceability of Track vs Type of Track based on If Combined Album or Not", x = "Danceability", y = "Type of Track") +
+  facet_wrap(~ Is_Album, ncol = 1)
+
+#finding summary statistics
+stats.2 = prop.table(table(Tyler_Sub$Is_Album))
+
+#putting summary statistics into an easier to see table
+my_nice_table(your_table = stats.2, vector_nice_names = c("If Track is an Album", "Danceabilty Proportion"), nice_title = "Means of Danceability of each Track if in an Album or Not")
+```
+
+Combined albums (Deluxe, Studio, and Instrumental) seemed to have the highest proportion of danceability of all tracks at 0.73 vs non-albums (Singles, Features, and EP's) which had a proportion of 0.27. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#creating plot for popularity and Tempo
+tyler_ggplot + geom_point(aes(x=popularity, y=tempo),  color="brown4") + theme_minimal() +  theme(legend.position = "none") + labs(title = "Popularity of Track vs Tempo", x = "Popularity on Spotify Charts", y = "Tempo of Track")
+```
+
+There does not seem to be a strong correlation between a track's popularity and tempo. The correlation value is 
+is `r round(cor(Tyler_Sub$popularity, Tyler_Sub$tempo), 2)`.  
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#creating plot for speechiness vs loudness organized by month
+tyler_ggplot + geom_point(aes(x=speechiness, y=loudness, color=month)) + labs(title = "Speechiness vs Loudness of Track, Organized by Month Released", x = "Speechiness of Track", y = "Loudness of Track")
+```
+
+There does not seem to be a strong correlation between a track's speechiness and loudness. The correlation value is `r round(cor(Tyler_Sub$speechiness, Tyler_Sub$loudness), 2)`.  
+
+
+# **Question 6**  
+
+I had a friend look over my code and tell me the parts of it which they thought I should make clearer. I made comments before any major chuncks of code to let others know what I was doing, or what my intention for the code was. 
+
+
+# **Question 7**  
+
+I used three in-line codes in my descriptions of each of the multivariate plots, as well as two in the last 2 univariate plots to help with my descriptive statistics. I used a user-written function to help me create tables that were easier to see. I created this function at the very beginning of my rmd where I downloaded my libraries. I used an if statement to create graphs based on if my variables were categorical or numerical. I did this in question number four, with my univariate plots. I used a loop to create two new variables of interest so that I could analyze them later in my plot. I did this during the third question where I subsetted my data.  
+
+# **Question 8**  
+
+All in all, I learned a lot more about Tyler, The Creator's music than when I first started this project. Question three showed me that the musician releases most of his music during the month of April, and released the most tracks during the year 2013. In question four, I discovered that while there may not be much of a correlation between the popularity of a track and its tempo (-.06), the danceability of a track is significantly larger when the track is on an album (whether that be a deluxe, instrumental or studio album) than if it is on a single, feature, or EP. I did expect the tempo of a track to have somewhat of a correlation to its popularity (I prefer more upbeat songs to slower ones), so I was surprised to see that they had almost no influence on each other. 
+
+# **Question 9**  
+
+#### *References*
+
+Chikodi, Precious. Tyler the Creator Dataset. Kaggle, 2023, www.kaggle.com/datasets/chik0di/tyler-the-creator-dataset. Accessed 13 Nov. 2024.
+
+"Tyler, the Creator – Pin." Pinterest, www.pinterest.com/pin/7036943161932658/. Accessed 13 Nov. 2024.
+
+Tyler, the Creator. Spotify Artist Page. Spotify, open.spotify.com/artist/4V8LLVI7PbaPR0K2TGSxFF. Accessed 13 Nov. 2024. 
+
+"Tyler, the Creator." Wikipedia, Wikimedia Foundation, 13 Nov. 2024, en.wikipedia.org/wiki/Tyler,_the_Creator. 
+
+

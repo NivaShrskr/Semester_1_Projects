@@ -1,0 +1,98 @@
+---
+title: "Project 1 - Albums and Weeks on Billboard"
+author: "Niva Shirsekar - SDS 313, UT Austin"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+Dowloading the dataset and download appropritate libraries
+```{r echo=FALSE}
+#Dowloading the dataset and download appropritate libraries
+albums <- read.csv("Project1_Albums.csv")
+library(ggplot2)
+```
+
+
+# **1.) Introduction**
+
+In 2003, Rolling Stone magazine released its famous “500 Greatest Albums of All Time” list with *Sgt. Pepper's Lonely Hearts Club Band* by the Beatles at #1. The 2012 update left the top 10 unchanged, solidifying the rankings. In 2020, everything shifted. Marvin Gaye’s *What’s Going On* jumped to #1, and nearly a third of the albums were now new to the list. Recent releases like Kanye West’s (also known as "Ye") *My Beautiful Dark Twisted Fantasy* and older albums like Joy Division’s *Unknown Pleasures* made their debuts. Changing listening habits, like the rise of streaming, led to 18% of dropped albums being compilations, and 6% of the removed albums aren’t even on Spotify. Popularity also had a large effect on the rankings --30% of the 2020 top 100 albums charted at #1 on Billboard. This project examines the differences between different factors in the 2020 rankings (genres, spotify popularity, and peak Billboard position) compared to an album's number of weeks on Billboard to explore what relationships they have. [Click here](https://www.rollingstone.com/music/music-lists/best-albums-of-all-time-1062063/jay-z-the-blueprint-3-1063183/) to see the full list of the current top 500 albums.
+
+![Image of the #1 album on the Rolling Stones' List--"What's Going On", by Marvin Gaye](1453.png)
+
+# **2.) Outcome Variable**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#finding the frequency of an album's weeks on the billboard charts
+albums_ggplot <- ggplot(albums)
+albums_ggplot + geom_histogram(aes(x=weeks_on_billboard), col='black',fill='lightblue', binwidth = 5, ) +  labs(title="Frequency of an Album's Weeks on the Billboard Charts",x='Weeks on Billboard',y='Frequency')
+```
+
+The summary statistics of the distribution of the weeks on Billboard for the albums in the dataset are `r fivenum(albums$weeks_on_billboard)` (shown in the order of the: Minimum, 1st Quartile, Median, Mean, 3rd Quartile, Maximum, and Null values).
+
+# **3.) Bivariate Analyses**
+
+[**Genre**]{style="color: blue;"}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#setting albums in ggplot
+albums_ggplot <- ggplot(albums)
+#finding the weeks on billboard vs genre
+albums_ggplot + geom_boxplot(aes(x=weeks_on_billboard, y = genre), na.rm=T, fill='lightgreen') +  labs(title="Weeks an Album is on Billboard's Charts vs Genre",x='Weeks on Billboard',y='Genre')
+median_weeksonbillboard <- aggregate(weeks_on_billboard ~ genre, albums, median)
+#loading in appropriate libraries and creating a table to find a genre's median weeks on billboard
+library(kableExtra)
+my_table = kbl(median_weeksonbillboard, col.names =c("Genre", "Median Weeks on Billboard"))
+kable_styling(my_table)
+
+```
+
+The table and graphs show that the genres of Singer-Songwriter/Heartland Rock and Indie/Alt Rock had the highest median weeks on the Billboard list, at 97 and 75 weeks, respectively. This indicates that these genres are more likely to spend larger amounts of time on the Billboard list than genres like Reggae or Jazz, which had much lower median weeks on the Billboard list.
+
+[**Spotify Popularity**]{style="color: blue;"}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#finding the weeks on billboard vs spotify popularity
+albums_ggplot + geom_point(aes(x=weeks_on_billboard,y=spotify_popularity), na.rm = T, col="magenta") + labs(title="Weeks an Album is on Billboard's Charts vs Spotify Popularity",x='Weeks on Billboard',y='Spotify Popularity') 
+```
+
+The correlation between the weeks an album is on the Billboard list and its spotify popularity is `r round(cor(albums$weeks_on_billboard, albums$spotify_popularity, use = "complete.obs"), 2)`, which indicates that there is not a very strong relationship between the two variables. This means that the weeks an album is on the Billboard list does not have much of an impact on its Spotify streams. *Some* of the albums that have been on the Billboard list for longer amounts of time do tend to have higher Spotify streams, but it is not guaranteed, since there is not high enough of a correlation between the two to determine a relationship.
+
+[**Release Year**]{style="color: blue;"}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#finding weeks on billboard vs release year
+albums_ggplot + geom_point(aes(x= release_year, y = weeks_on_billboard), na.rm=T, col='orange') + labs(title="Release Year vs Weeks an Album is on Billboard's Charts",x='Release Year',y='Weeks on Billboard')
+```
+
+The correlation between the weeks an album is on the Billboard list and its release year is `r round(cor(albums$release_year, albums$weeks_on_billboard, use = "complete.obs"), 2)`, which indicates that there is, again, not a very strong relationship between the two variables. The year an album was released had a very weak correlation to its weeks on the Billboard charts.
+
+[**Multivariate Plot**]{style="color: blue;"}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width= 10, fig.height=5, fig.align='center'}
+#multivariate plot on Spotify Popularity vs Weeks an Album is on Billboard's Charts, With Genre Arranged by Color
+albums_ggplot + geom_point(aes(x=spotify_popularity, y=weeks_on_billboard, color=genre)) + labs(title= "Spotify Popularity vs Weeks an Album is on Billboard's Charts, With Genre Arranged by Color",x='Spotify Popularity',y='Weeks on Billboard')
+```
+
+There does not seem to be much of a correlation between the weeks an album is on Billboard, its Spotify popularity, and the genre of music it is. There does seem to be a *slight* positive correlation between the Spotify popularity and the weeks on Billboard, but not enough to have any direct relevance or relationship.
+
+# **4.) Choice Elements**
+
+I used the following choice elements in my project:
+
+1.) Use 2 or more in-line codes within your report.\
+2.) Include at least 2 working hyperlinks within your report that further explain your data source or one of the variables.\
+3.) Change the default font style, size, and/or color of the text in part of your report to highlight some important part of your analysis.\
+4.) Include a floating table of contents to allow easy navigation across sections.\
+5.) At the end of your bivariate analysis section, include a multivariate plot that displays the relationship among your outcome variable and at least two of the predictors. Briefly interpret the findings from your graph. 4
+
+I put the inline codes in the summaries of the Spotify Popularity and Release year plots. The hyperlinks can be found in the introduction and conclusion paragraphs of this project. The changed color of the text can be found just before each bivariate analysis plot, written and bolded in blue. The floating ToC is included at the top of the Rmarkdown. The multivariate plot can be found at the end of the bivariate analysis section.
+
+# **5.) Conclusion**
+
+Overall, there is not a strong enough correlation between any of the numerical variables to determine a relationship between them. It can be inferred that certain genres of music stay on the Billboard list for longer amounts of time, but there is no strong evidence to determine a relationship between the weeks and album is on the billboard list and its Spotify popularity or its release year. It would be helpful to know how historical events hindered or supported the popularity of certain albums, and if the advances in recent technology impacted album streaming in any way. For more information on **Billboard's** rankings and history, [click here.](https://www.cantgetmuchhigher.com/p/whats-the-point-of-the-billboard).
+
+**References:**\
+[Rolling Stone Magazine](https://www.rollingstone.com/music/music-lists/best-albums-of-all-time-1062063/jay-z-the-blueprint-3-1063183/)\
+[Can't Get Much Higher Blog](https://www.cantgetmuchhigher.com/p/whats-the-point-of-the-billboard)

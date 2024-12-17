@@ -1,0 +1,67 @@
+---
+title: "Lab 3"
+author: "Niva Shirsekar"
+date: "2024-11-12"
+output: 
+   html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+We are going to solve option 1 for lab three, which involves a "surprise" egg that one of five different types of toys in each egg. We are trying to find out how many eggs we need to buy to get a 95% chance of getting at least one of each type of toy. 
+
+## Question 2
+
+```{r warning=FALSE, message=FALSE}
+
+#creating the vector for the egg
+my.toys = c(1:5)
+#Startting with five eggs and testing all the way up to 25 eggs
+for(j in 5:25){
+  #making all toys to store value
+  all_toys = c()
+  #running 10000 trials
+for(i in 1:10000) {
+  this.toy = sample(my.toys, j, replace = TRUE)
+  #unique finds the unique toys in the sample, == 5 checks if you have all five toys 
+  all_toys = c(all_toys, length(unique(this.toy)) == 5)
+}
+  #calculates the probability that you have all 5 toys
+cat("With", j, "boxes, the propability of getting 5 toys is", sum(all_toys)/10000, "\n")
+}
+
+```
+
+## Question 3
+
+This code is our attempt to figure out the chance of getting a complete set of five unique toys by drawing toys randomly. Here’s how I approached it:
+
+1) Defining the Toys:  
+   *First, we set up a list with five different toys, simply labeled 1 through 5.*
+
+2) Looping Over Different Numbers of Boxes:  
+   *We wanted to test what happens when we opened different numbers of boxes, starting with 5 boxes and going up to 25. For each of these numbers, we ran multiple trials to see how often we ended up with all five toys.*
+
+3) Simulating Each Scenario:  
+   *For each number of boxes, we simulated opening them 10,000 times. Each time, we randomly picked toys from the five available (allowing for repeats, as in real life). This way, each trial shows what we might get if we opened that specific number of boxes.*
+
+4) Checking for a Complete Set:  
+   *After each round of box openings, we checked if we’d collected all five different toys. If we had, we counted it as a “success”; if not, it didn’t count.*
+
+5) Calculating the Probability:  
+   *Once we had results from 10,000 trials for each number of boxes, we calculated the probability of completing the set. This was simply the number of successful trials divided by 10,000. This percentage gives us an idea of how likely it is to get all five toys with each box count.*
+
+6) Printing the Results:  
+   *For each number of boxes tested, we printed out the chance of completing the set. This way, we could see how the probability of getting all five toys changes as we opened more boxes.*
+
+## Question 4
+What we found the most challenging was being able to find how to set up the code being able to check for all five toys at the same time, and being able to set up the code to be able to find a 95% chance of getting at least one of each type of toy. in the end, we were able to run our simulation successfully. We would have to buy 21 giant plastic pink eggs to be able to have 95% chance of getting at lease one of each five different collectible squishmallows.
+
+
+
